@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#10243a">
+  <title>VanCheck — Delivery Vehicle Photo Inspection</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#" id="brandHome" aria-label="VanCheck dashboard">
+    <span class="brand-mark" aria-hidden="true">✓</span>
+    <span><strong>VanCheck</strong><small>VEHICLE INSPECTION</small></span>
+  </a>
+  <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="mainNav" aria-label="Toggle navigation">☰</button>
+  <nav id="mainNav" class="main-nav" aria-label="Main navigation">
+    <button class="nav-link active" data-view="dashboardView">Dashboard</button>
+    <button class="nav-link" data-view="historyView">Inspection history</button>
+  </nav>
+</header>
+
+<main class="app-shell">
+  <section id="dashboardView" class="view">
+    <div class="welcome-row">
+      <div>
+        <p class="eyebrow">DELIVERY OPERATIONS</p>
+        <h1>Vehicle condition,<br><span>documented.</span></h1>
+        <p class="muted intro">Capture clear photos before and after every shift. Keep a record of the vehicle's condition.</p>
+      </div>
+      <div class="status-pill"><span class="status-dot"></span><span id="statusText">Ready for inspection</span></div>
+    </div>
+
+    <section class="panel" aria-labelledby="setupHeading">
+      <div class="section-heading">
+        <div><p class="eyebrow">YOUR DETAILS</p><h2 id="setupHeading">Inspection setup</h2></div>
+        <span class="icon-tile" aria-hidden="true">▤</span>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="driverName">Driver name <span class="required">*</span></label>
+          <input id="driverName" type="text" autocomplete="name" placeholder="Enter your name" maxlength="100" required>
+        </div>
+        <div class="field">
+          <label for="vehicleNumber">Van / vehicle number <span class="required">*</span></label>
+          <input id="vehicleNumber" type="text" placeholder="e.g. VAN-024" maxlength="50" required>
+        </div>
+        <div class="field">
+          <label for="currentDateTime">Current date and time</label>
+          <input id="currentDateTime" type="text" readonly>
+          <small class="field-hint">Set automatically on this device.</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="action-grid" aria-label="Inspection actions">
+      <button id="startInspectionBtn" class="action-card primary-action" type="button">
+        <span class="action-icon" aria-hidden="true">📷</span>
+        <span class="action-copy"><strong>Start Inspection</strong><small>Take photos and record vehicle condition</small></span>
+        <span class="action-arrow" aria-hidden="true">→</span>
+      </button>
+      <button id="viewHistoryBtn" class="action-card secondary-action" type="button">
+        <span class="action-icon history-icon" aria-hidden="true">◷</span>
+        <span class="action-copy"><strong>View Inspection History</strong><small>Review previously saved inspections</small></span>
+        <span class="action-arrow" aria-hidden="true">→</span>
+      </button>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <div><p class="eyebrow">RECENT ACTIVITY</p><h2>Latest inspections</h2></div>
+        <button class="text-button" id="seeAllBtn" type="button">See all <span aria-hidden="true">→</span></button>
+      </div>
+      <div id="latestInspections" class="latest-list"></div>
+    </section>
+    <p class="disclaimer">VanCheck is an independent vehicle documentation tool and is not affiliated with Amazon.</p>
+  </section>
+
+  <section id="inspectionView" class="view hidden">
+    <div class="page-heading">
+      <button class="back-button" id="backToDashboard" type="button">← Dashboard</button>
+      <p class="eyebrow">PHOTO CHECKLIST</p>
+      <h1>Vehicle inspection</h1>
+      <p class="muted">Take each photo in good light. Make sure the whole area is visible.</p>
+    </div>
+
+    <form id="inspectionForm" novalidate>
+      <section class="panel">
+        <div class="section-heading"><div><p class="eyebrow">SHIFT DETAILS</p><h2>Inspection type</h2></div></div>
+        <div class="shift-options">
+          <label class="shift-option">
+            <input type="radio" name="inspectionType" value="Before Shift" checked>
+            <span class="shift-symbol" aria-hidden="true">↗</span>
+            <span><strong>Before Shift</strong><small>Document condition before driving</small></span>
+          </label>
+          <label class="shift-option">
+            <input type="radio" name="inspectionType" value="After Shift">
+            <span class="shift-symbol" aria-hidden="true">↙</span>
+            <span><strong>After Shift</strong><small>Document condition at shift end</small></span>
+          </label>
+        </div>
+        <div class="inspection-meta">
+          <span><b>Driver</b><span id="formDriver">—</span></span>
+          <span><b>Vehicle</b><span id="formVehicle">—</span></span>
+          <span><b>Started</b><span id="formDateTime">—</span></span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="section-heading checklist-heading">
+          <div><p class="eyebrow">PHOTO EVIDENCE</p><h2>Vehicle photo checklist</h2><p class="muted small-copy">Six required views plus optional damage photos.</p></div>
+          <div class="progress-ring" aria-live="polite"><strong id="photoProgress">0/6</strong><small>required</small></div>
+        </div>
+        <div id="photoChecklist" class="photo-grid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="section-heading"><div><p class="eyebrow">CONDITION REPORT</p><h2>Damage and notes</h2></div></div>
+        <fieldset class="damage-choice">
+          <legend>Damage found? <span class="required">*</span></legend>
+          <label class="radio-label"><input type="radio" name="damageFound" value="No" checked> No damage found</label>
+          <label class="radio-label"><input type="radio" name="damageFound" value="Yes"> Yes, damage found</label>
+        </fieldset>
+        <div id="damageFields" class="form-grid damage-fields hidden">
+          <div class="field">
+            <label for="damageDescription">Damage description <span class="required">*</span></label>
+            <textarea id="damageDescription" rows="3" maxlength="1000" placeholder="Describe the scratch, dent, crack, or other issue"></textarea>
+          </div>
+          <div class="field">
+            <label for="damageLocation">Location of damage <span class="required">*</span></label>
+            <input id="damageLocation" type="text" maxlength="250" placeholder="e.g. rear passenger-side panel">
+          </div>
+        </div>
+        <div class="field notes-field">
+          <label for="inspectionNotes">Additional notes <span class="optional">(optional)</span></label>
+          <textarea id="inspectionNotes" rows="3" maxlength="1500" placeholder="Anything else worth recording?"></textarea>
+        </div>
+        <div class="field extra-damage">
+          <label for="extraDamagePhotos">Additional damage photos <span class="optional">(optional)</span></label>
+          <input id="extraDamagePhotos" type="file" accept="image/*" capture="environment" multiple>
+          <small class="field-hint">You can select more than one image. Images are saved in this browser only.</small>
+          <div id="extraDamagePreview" class="extra-preview"></div>
+        </div>
+      </section>
+      <div class="form-footer">
+        <p class="muted small-copy">Required: driver, vehicle number, and all six standard photo categories.</p>
+        <button class="button button-primary save-button" type="submit">✓ Save Inspection</button>
+      </div>
+      <div id="formMessage" class="message hidden" role="status" aria-live="polite"></div>
+    </form>
+    <p class="disclaimer">VanCheck is an independent vehicle documentation tool and is not affiliated with Amazon.</p>
+  </section>
+
+  <section id="historyView" class="view hidden">
+    <div class="page-heading">
+      <button class="back-button" id="historyBackBtn" type="button">← Dashboard</button>
+      <p class="eyebrow">YOUR RECORDS</p>
+      <h1>Inspection history</h1>
+      <p class="muted">Saved inspections on this browser and device.</p>
+    </div>
+    <div class="history-toolbar">
+      <label class="search-field"><span aria-hidden="true">⌕</span><input id="historySearch" type="search" placeholder="Search vehicle or driver" aria-label="Search inspections"></label>
+      <select id="historyTypeFilter" aria-label="Filter by inspection type">
+        <option value="all">All inspection types</option><option value="Before Shift">Before Shift</option><option value="After Shift">After Shift</option>
+      </select>
+    </div>
+    <div id="historyList" class="history-list"></div>
+    <p class="disclaimer">VanCheck is an independent vehicle documentation tool and is not affiliated with Amazon.</p>
+  </section>
+
+  <section id="detailView" class="view hidden">
+    <div class="page-heading">
+      <button class="back-button" id="detailBackBtn" type="button">← Inspection history</button>
+      <p class="eyebrow">INSPECTION RECORD</p>
+      <h1>Complete inspection</h1>
+      <p class="muted">Review the saved details and photo evidence.</p>
+    </div>
+    <div id="inspectionDetail"></div>
+    <p class="disclaimer">VanCheck is an independent vehicle documentation tool and is not affiliated with Amazon.</p>
+  </section>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<dialog id="confirmDialog" class="confirm-dialog">
+  <form method="dialog">
+    <h2>Delete this inspection?</h2>
+    <p>This record and its saved photos will be removed from this browser. This cannot be undone.</p>
+    <div class="dialog-actions"><button class="button button-outline" value="cancel">Cancel</button><button id="confirmDeleteBtn" class="button button-danger" value="confirm">Delete inspection</button></div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  "use strict";
+  const STORAGE_KEY = "vancheck_inspections_v1";
+  const categories = [
+    { id: "front", title: "Front of van", hint: "Include bumper, grille, and headlights." },
+    { id: "rear", title: "Rear of van", hint: "Include rear doors, bumper, and lights." },
+    { id: "driverSide", title: "Driver-side exterior", hint: "Capture the full side of the vehicle." },
+    { id: "passengerSide", title: "Passenger-side exterior", hint: "Capture the full side of the vehicle." },
+    { id: "dashboard", title: "Dashboard and mileage", hint: "Make sure the odometer reading is legible." },
+    { id: "interior", title: "Interior and cargo area", hint: "Show the cab and cargo space clearly." },
+    { id: "existingDamage", title: "Existing damage", hint: "Optional overview of any visible damage.", optional: true }
+  ];
+  const $ = (id) => document.getElementById(id);
+  const views = ["dashboardView", "inspectionView", "historyView", "detailView"];
+  let photos = {};
+  let extraDamageImages = [];
+  let deleteTargetId = null;
+  let toastTimer = null;
+
+  function nowText(date = new Date()) {
+    return date.toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+  }
+  function updateClock() { $("currentDateTime").value = nowText(); }
+  updateClock();
+  setInterval(updateClock, 30000);
+
+  function getInspections() {
+    try {
+      const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      return Array.isArray(data) ? data : [];
+    } catch (error) { return []; }
+  }
+  function saveInspections(items) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      return true;
+    } catch (error) {
+      showToast("Storage is full. Remove older inspections or use smaller photos.", "error");
+      return false;
+    }
+  }
+  function showToast(message, type = "success") {
+    const toast = $("toast");
+    toast.textContent = message;
+    toast.className = "toast show " + type;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.className = "toast", 4200);
+  }
+  function setView(id) {
+    views.forEach(view => $(view).classList.toggle("hidden", view !== id));
+    document.querySelectorAll(".nav-link").forEach(btn => btn.classList.toggle("active", btn.dataset.view === id || (id === "detailView" && btn.dataset.view === "historyView")));
+    $("mainNav").classList.remove("nav-open");
+    $("navToggle").setAttribute("aria-expanded", "false");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (id === "historyView") renderHistory();
+    if (id === "dashboardView") renderDashboard();
+  }
+  function readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error("Could not read this image."));
+      reader.readAsDataURL(file);
+    });
+  }
+  async function compressImage(file) {
+    if (!file.type.startsWith("image/")) throw new Error("Please choose an image file.");
+    // Resize large photos before storing to reduce localStorage usage.
+    const dataUrl = await readFileAsDataURL(file);
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const maxSide = 1400;
+        const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(img.naturalHeight * scale));
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.78));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  }
+
+  function renderPhotoChecklist() {
+    $("photoChecklist").innerHTML = categories.map(cat => `
+      <article class="photo-card ${cat.optional ? "optional-card" : ""}" data-category="${cat.id}">
+        <div class="photo-card-head">
+          <span class="category-number">${cat.optional ? "+" : String(categories.indexOf(cat) + 1).padStart(2, "0")}</span>
+          <div class="photo-title-wrap"><h3>${cat.title}</h3><p>${cat.hint}</p></div>
+          <span class="complete-badge" id="badge-${cat.id}">${cat.optional ? "Optional" : "Needed"}</span>
+        </div>
+        <div class="photo-preview ${photos[cat.id] ? "" : "empty"}" id="preview-${cat.id}">
+          ${photos[cat.id] ? `<img src="${photos[cat.id]}" alt="${cat.title} preview">` : `<span class="preview-placeholder" aria-hidden="true">▧</span><span>No photo selected</span>`}
+        </div>
+        <div class="photo-actions">
+          <label class="button button-primary camera-button" for="file-${cat.id}">📷 ${photos[cat.id] ? "Retake / Replace" : "Take photo"}</label>
+          <input class="file-input" id="file-${cat.id}" type="file" accept="image/*" capture="environment" data-category="${cat.id}" aria-label="Take or select photo for ${cat.title}">
+          <label class="button button-outline upload-button" for="file-upload-${cat.id}">Upload</label>
+          <input class="file-input" id="file-upload-${cat.id}" type="file" accept="image/*" data-category="${cat.id}" aria-label="Upload photo for ${cat.title}">
+          ${photos[cat.id] ? `<button class="remove-photo" type="button" data-remove="${cat.id}">Remove</button>` : ""}
+        </div>
+      </article>`).join("");
+    $("photoChecklist").querySelectorAll('input[type="file"]').forEach(input => {
+      input.addEventListener("change", async (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        try {
+          photos[input.dataset.category] = await compressImage(file);
+          renderPhotoChecklist();
+          updateProgress();
+        } catch (error) { showToast(error.message || "Unable to use this photo.", "error"); }
+        event.target.value = "";
+      });
+    });
+    $("photoChecklist").querySelectorAll("[data-remove]").forEach(button => button.addEventListener("click", () => {
+      delete photos[button.dataset.remove];
+      renderPhotoChecklist(); updateProgress();
+    }));
+    updateProgress();
+  }
+  function updateProgress() {
+    const required = categories.filter(c => !c.optional);
+    const count = required.filter(c => Boolean(photos[c.id])).length;
+    $("photoProgress").textContent = `${count}/${required.length}`;
+    required.forEach(cat => {
+      const badge = $("badge-" + cat.id);
+      if (badge) {
+        badge.textContent = photos[cat.id] ? "Complete ✓" : "Needed";
+        badge.classList.toggle("done", Boolean(photos[cat.id]));
+      }
+    });
+  }
+  function selectedType() {
+    return document.querySelector('input[name="inspectionType"]:checked')?.value || "Before Shift";
+  }
+  function damageFound() {
+    return document.querySelector('input[name="damageFound"]:checked')?.value || "No";
+  }
+  function beginInspection() {
+    const driver = $("driverName").value.trim();
+    const vehicle = $("vehicleNumber").value.trim();
+    if (!driver || !vehicle) {
+      showToast("Enter your driver name and vehicle number before starting.", "error");
+      (!driver ? $("driverName") : $("vehicleNumber")).focus();
+      return;
+    }
+    $("formDriver").textContent = driver;
+    $("formVehicle").textContent = vehicle;
+    $("formDateTime").textContent = nowText();
+    photos = {};
+    extraDamageImages = [];
+    $("extraDamagePhotos").value = "";
+    $("extraDamagePreview").innerHTML = "";
+    $("inspectionNotes").value = "";
+    $("damageDescription").value = "";
+    $("damageLocation").value = "";
+    document.querySelector('input[name="damageFound"][value="No"]').checked = true;
+    $("damageFields").classList.add("hidden");
+    $("formMessage").className = "message hidden";
+    renderPhotoChecklist();
+    setView("inspectionView");
+  }
+  function renderDashboard() {
+    const inspections = getInspections().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    $("latestInspections").innerHTML = inspections.length ? inspections.slice(0, 3).map(item => `
+      <button class="latest-item" type="button" data-open="${item.id}">
+        <span class="latest-icon" aria-hidden="true">✓</span>
+        <span class="latest-copy"><strong>${escapeHtml(item.vehicleNumber)}</strong><small>${escapeHtml(item.type)} · ${escapeHtml(nowText(new Date(item.createdAt)))}</small></span>
+        <span class="latest-arrow" aria-hidden="true">→</span>
+      </button>`).join("") : `<div class="empty-state"><span aria-hidden="true">▤</span><strong>No inspections saved yet</strong><p>Your completed inspections will appear here.</p></div>`;
+    $("latestInspections").querySelectorAll("[data-open]").forEach(btn => btn.addEventListener("click", () => openDetail(btn.dataset.open)));
+    $("statusText").textContent = inspections.length ? `${inspections.length} saved inspection${inspections.length === 1 ? "" : "s"}` : "Ready for inspection";
+  }
+  function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, ch => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[ch]));
+  }
+  function renderHistory() {
+    const query = $("historySearch").value.trim().toLowerCase();
+    const type = $("historyTypeFilter").value;
+    const items = getInspections().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .filter(item => (type === "all" || item.type === type) &&
+        `${item.driverName} ${item.vehicleNumber} ${item.type} ${item.damageDescription || ""}`.toLowerCase().includes(query));
+    $("historyList").innerHTML = items.length ? items.map(item => {
+      const thumbs = Object.entries(item.photos || {}).filter(([key, value]) => value && key !== "existingDamage").slice(0, 4);
+      const damage = item.damageFound === "Yes" ? `Damage reported${item.damageLocation ? ": " + escapeHtml(item.damageLocation) : ""}` : "No damage reported";
+      return `<article class="history-card">
+        <div class="history-card-top"><div><span class="type-chip ${item.type === "After Shift" ? "after" : ""}">${escapeHtml(item.type)}</span><h2>${escapeHtml(item.vehicleNumber)}</h2><p class="muted">${escapeHtml(item.driverName)} · ${escapeHtml(nowText(new Date(item.createdAt)))}</p></div><span class="saved-check" aria-label="Saved">✓</span></div>
+        <div class="thumbnail-row">${thumbs.map(([key, src]) => `<img src="${src}" alt="${escapeHtml(key)} photo thumbnail">`).join("")}<span class="thumb-count">${Object.values(item.photos || {}).filter(Boolean).length} photos</span></div>
+        <p class="damage-summary"><strong>Condition:</strong> ${damage}</p>
+        <div class="history-actions"><button class="button button-primary" type="button" data-open="${item.id}">Open inspection</button><button class="button button-danger-outline" type="button" data-delete="${item.id}">Delete</button></div>
+      </article>`;
+    }).join("") : `<div class="empty-state"><span aria-hidden="true">⌕</span><strong>No matching inspections</strong><p>Try another search or save your first inspection.</p></div>`;
+    $("historyList").querySelectorAll("[data-open]").forEach(btn => btn.addEventListener("click", () => openDetail(btn.dataset.open)));
+    $("historyList").querySelectorAll("[data-delete]").forEach(btn => btn.addEventListener("click", () => askDelete(btn.dataset.delete)));
+  }
+  function openDetail(id) {
+    const item = getInspections().find(record => record.id === id);
+    if (!item) { showToast("That inspection could not be found.", "error"); setView("historyView"); return; }
+    const photoLabels = Object.fromEntries(categories.map(c => [c.id, c.title]));
+    const photoHtml = Object.entries(item.photos || {}).filter(([, src]) => Boolean(src)).map(([key, src]) =>
+      `<figure class="detail-photo"><img src="${src}" alt="${escapeHtml(photoLabels[key] || "Additional damage")}"><figcaption>${escapeHtml(photoLabels[key] || "Additional damage photo")}</figcaption></figure>`).join("");
+    const extraHtml = (item.extraDamageImages || []).map((src, i) => `<figure class="detail-photo"><img src="${src}" alt="Additional damage photo ${i + 1}"><figcaption>Additional damage photo ${i + 1}</figcaption></figure>`).join("");
+    $("inspectionDetail").innerHTML = `
+      <section class="panel detail-summary">
+        <div class="detail-top"><span class="type-chip ${item.type === "After Shift" ? "after" : ""}">${escapeHtml(item.type)}</span><span class="saved-check">✓ Saved</span></div>
+        <h2>${escapeHtml(item.vehicleNumber)}</h2>
+        <div class="detail-facts"><p><b>Driver</b>${escapeHtml(item.driverName)}</p><p><b>Date &amp; time</b>${escapeHtml(nowText(new Date(item.createdAt)))}</p><p><b>Damage found</b>${escapeHtml(item.damageFound)}</p>${item.damageFound === "Yes" ? `<p><b>Damage location</b>${escapeHtml(item.damageLocation || "Not provided")}</p><p class="wide"><b>Description</b>${escapeHtml(item.damageDescription || "Not provided")}</p>` : ""}<p class="wide"><b>Notes</b>${escapeHtml(item.notes || "No additional notes.")}</p></div>
+      </section>
+      <section class="panel"><div class="section-heading"><div><p class="eyebrow">PHOTO EVIDENCE</p><h2>Saved photos</h2></div></div><div class="detail-photo-grid">${photoHtml || "<p>No standard photos saved.</p>"}${extraHtml}</div></section>
+      <div class="detail-bottom"><button class="button button-danger-outline" id="detailDeleteBtn" type="button">Delete inspection</button><button class="button button-primary" id="detailHistoryBtn" type="button">Back to history</button></div>`;
+    $("detailDeleteBtn").addEventListener("click", () => askDelete(item.id, true));
+    $("detailHistoryBtn").addEventListener("click", () => setView("historyView"));
+    setView("detailView");
+  }
+  function askDelete(id, fromDetail = false) {
+    deleteTargetId = id;
+    $("confirmDialog").dataset.fromDetail = fromDetail ? "yes" : "no";
+    if (typeof $("confirmDialog").showModal === "function") $("confirmDialog").showModal();
+    else if (window.confirm("Delete this inspection? This cannot be undone.")) deleteInspection();
+  }
+  function deleteInspection() {
+    if (!deleteTargetId) return;
+    const updated = getInspections().filter(item => item.id !== deleteTargetId);
+    if (saveInspections(updated)) {
+      showToast("Inspection deleted.");
+      const fromDetail = $("confirmDialog").dataset.fromDetail === "yes";
+      deleteTargetId = null;
+      if ($("confirmDialog").open) $("confirmDialog").close("confirm");
+      setView(fromDetail ? "historyView" : "historyView");
+    }
+  }
+
+  $("startInspectionBtn").addEventListener("click", beginInspection);
+  $("viewHistoryBtn").addEventListener("click", () => setView("historyView"));
+  $("seeAllBtn").addEventListener("click", () => setView("historyView"));
+  $("backToDashboard").addEventListener("click", () => setView("dashboardView"));
+  $("historyBackBtn").addEventListener("click", () => setView("dashboardView"));
+  $("detailBackBtn").addEventListener("click", () => setView("historyView"));
+  $("brandHome").addEventListener("click", e => { e.preventDefault(); setView("dashboardView"); });
+  document.querySelectorAll(".nav-link").forEach(btn => btn.addEventListener("click", () => setView(btn.dataset.view)));
+  $("navToggle").addEventListener("click", () => {
+    const nav = $("mainNav");
+    const isOpen = nav.classList.toggle("nav-open");
+    $("navToggle").setAttribute("aria-expanded", String(isOpen));
+  });
+  $("historySearch").addEventListener("input", renderHistory);
+  $("historyTypeFilter").addEventListener("change", renderHistory);
+  document.querySelectorAll('input[name="damageFound"]').forEach(input => input.addEventListener("change", () => {
+    const yes = damageFound() === "Yes";
+    $("damageFields").classList.toggle("hidden", !yes);
+    $("damageDescription").required = yes;
+    $("damageLocation").required = yes;
+  }));
+  $("extraDamagePhotos").addEventListener("change", async event => {
+    const files = Array.from(event.target.files || []);
+    try {
+      extraDamageImages = await Promise.all(files.map(compressImage));
+      $("extraDamagePreview").innerHTML = extraDamageImages.map((src, index) =>
+        `<div class="extra-thumb"><img src="${src}" alt="Additional damage photo ${index + 1}"><button type="button" data-extra-remove="${index}" aria-label="Remove additional damage photo ${index + 1}">×</button></div>`).join("");
+      $("extraDamagePreview").querySelectorAll("[data-extra-remove]").forEach(button => button.addEventListener("click", () => {
+        extraDamageImages.splice(Number(button.dataset.extraRemove), 1);
+        $("extraDamagePreview").innerHTML = extraDamageImages.map((src, index) => `<div class="extra-thumb"><img src="${src}" alt="Additional damage photo ${index + 1}"><button type="button" data-extra-remove="${index}" aria-label="Remove additional damage photo ${index + 1}">×</button></div>`).join("");
+      }));
+    } catch (error) { showToast(error.message || "Unable to use these photos.", "error"); }
+    event.target.value = "";
+  });
+
+  $("inspectionForm").addEventListener("submit", event => {
+    event.preventDefault();
+    const driverName = $("driverName").value.trim();
+    const vehicleNumber = $("vehicleNumber").value.trim();
+    if (!driverName || !vehicleNumber) {
+      showFormError("Please return to the dashboard and enter your driver name and vehicle number.");
+      return;
+    }
+    const missing = categories.filter(cat => !cat.optional && !photos[cat.id]);
+    if (missing.length) {
+      showFormError("Please add a photo for: " + missing.map(cat => cat.title).join(", ") + ".");
+      const card = document.querySelector(`[data-category="${missing[0].id}"]`);
+      card?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (damageFound() === "Yes" && (!$("damageDescription").value.trim() || !$("damageLocation").value.trim())) {
+      showFormError("Please provide the damage description and its location, or select No damage found.");
+      (!$("damageDescription").value.trim() ? $("damageDescription") : $("damageLocation")).focus();
+      return;
+    }
+    const item = {
+      id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : "vc-" + Date.now() + "-" + Math.random().toString(16).slice(2),
+      driverName, vehicleNumber, type: selectedType(), createdAt: new Date().toISOString(),
+      photos: { ...photos }, damageFound: damageFound(),
+      damageDescription: $("damageDescription").value.trim(),
+      damageLocation: $("damageLocation").value.trim(),
+      notes: $("inspectionNotes").value.trim(),
+      extraDamageImages: [...extraDamageImages]
+    };
+    const records = getInspections();
+    records.push(item);
+    if (!saveInspections(records)) {
+      showFormError("This inspection could not be saved. Try smaller photos or remove older records to free browser storage.");
+      return;
+    }
+    $("formMessage").textContent = "Inspection saved successfully on this device.";
+    $("formMessage").className = "message success";
+    showToast("Inspection saved successfully.");
+    renderDashboard();
+    setTimeout(() => setView("historyView"), 900);
+  });
+  function showFormError(message) {
+    $("formMessage").textContent = message;
+    $("formMessage").className = "message error";
+    $("formMessage").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  $("confirmDeleteBtn").addEventListener("click", event => {
+    event.preventDefault();
+    deleteInspection();
+  });
+  $("confirmDialog").addEventListener("close", () => { if ($("confirmDialog").returnValue !== "confirm") deleteTargetId = null; });
+
+  renderPhotoChecklist();
+  renderDashboard();
+})();
+</script>
+</body>
+</html>
